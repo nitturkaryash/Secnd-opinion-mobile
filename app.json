@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "SecondOpinion Healthcare",
+    "slug": "secnd-healthcare-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {},
+    "web": {}
+  }
+} 
