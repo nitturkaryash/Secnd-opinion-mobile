@@ -321,7 +321,7 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                   <View style={styles.timelineIcon}>
                     {isCompleted ? (
                       <View style={styles.completedStepIndicator}>
-                        <Ionicons name="checkmark" size={18} color="#000000" />
+                        <Ionicons name="checkmark" size={18} color="#FFFFFF" />
                       </View>
                     ) : isCurrent ? (
                       <View style={styles.currentStepIndicator} />
@@ -743,7 +743,7 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFFFFF',
   },
 });
 
