@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#2767E2',
+    backgroundColor: '#2766E1',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   doneButton: {
-    backgroundColor: '#98e4fa',
+    backgroundColor: '#2766E1',
     borderRadius: 28,
     paddingVertical: 20,
     paddingHorizontal: 48,
