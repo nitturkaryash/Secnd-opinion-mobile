@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#333333',
+    color: '#FFFFFF',
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     textAlign: 'center',
-    color: '#666666',
+    color: '#FFFFFF',
     paddingHorizontal: 20,
   },
   progressCard: {
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333333',
+    color: '#FFFFFF',
     marginBottom: 12,
   },
   progressBar: {
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   cardHeader: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333333',
+    color: '#FFFFFF',
     marginBottom: 20,
   },
   inputContainer: {
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333333',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   input: {
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     fontSize: 16,
-    color: '#333333',
+    color: '#FFFFFF',
     borderWidth: 1,
     borderColor: 'transparent',
   },
@@ -479,12 +479,12 @@ const styles = StyleSheet.create({
   uploadButtonText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   uploadSubtext: {
     fontSize: 14,
-    color: '#000000',
+    color: '#FFFFFF',
     textAlign: 'center',
     opacity: 0.7,
   },
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   },
   supportedText: {
     fontSize: 14,
-    color: '#000000',
+    color: '#FFFFFF',
     opacity: 0.6,
   },
   fileItem: {
@@ -522,12 +522,12 @@ const styles = StyleSheet.create({
   fileName: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333333',
+    color: '#FFFFFF',
     marginBottom: 2,
   },
   fileSize: {
     fontSize: 12,
-    color: '#666666',
+    color: '#FFFFFF',
   },
   removeButton: {
     padding: 8,
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
   },
   characterCount: {
     fontSize: 12,
-    color: '#666666',
+    color: '#FFFFFF',
     textAlign: 'right',
     marginTop: 8,
   },
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFFFFF',
     marginRight: 12,
   },
 });

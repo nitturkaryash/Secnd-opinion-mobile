@@ -271,6 +271,7 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       </View>
     </View>
   );
+  
 
   const renderConfirmationView = () => {
     if (!appointmentDetails) return null;
