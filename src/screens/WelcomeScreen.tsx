@@ -90,8 +90,8 @@ const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 icon="document-text"
                 backgroundColor="#000000"
                 textColor="#FFFFFF"
-                iconColor="#000000"
-                iconBackgroundColor="#99E2F4"
+                iconColor="#FFFFFF"
+                iconBackgroundColor="#2766E1"
                 onPress={() => handleServicePress('Self-Service')}
               />
               
@@ -101,8 +101,8 @@ const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 icon="people"
                 backgroundColor="#FFFFFF"
                 textColor="#000000"
-                iconColor="#000000"
-                iconBackgroundColor="#99E2F4"
+                iconColor="#FFFFFF"
+                iconBackgroundColor="#2766E1"
                 onPress={() => handleServicePress('Assisted Help')}
               />
             </View>
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#99e2f4',
+    backgroundColor: '#2766E1',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#99e2f4',
+    backgroundColor: '#2766E1',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,

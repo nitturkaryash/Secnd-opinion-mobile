@@ -266,7 +266,7 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           activeOpacity={0.8}
         >
           <Text style={styles.confirmButtonText}>Confirm Appointment</Text>
-          <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+          <Ionicons name="arrow-forward" size={20} color="#000000" />
         </TouchableOpacity>
       </View>
     </View>
@@ -311,7 +311,7 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               const isLastItem = index === appointmentDetails.timeline.length - 1;
 
               // Determine the color of the connector based on the status of the current and next step
-              const connectorColor = isCompleted ? '#99E2F4' : '#E0E0E0';
+              const connectorColor = isCompleted ? '#2766E1' : '#E0E0E0';
               
               return (
                 <View key={index} style={styles.timelineItem}>
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#99E2F4',
+    backgroundColor: '#2766E1',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   selectedDate: {
-    backgroundColor: '#99E2F4',
+    backgroundColor: '#2766E1',
   },
   dateText: {
     fontSize: 16,
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0, 0, 0, 0.08)', // Subtle border for visual distinction
   },
   selectedTimeSlot: {
-    backgroundColor: '#99E2F4',
+    backgroundColor: '#2766E1',
     elevation: 4, // Increased elevation for selected state
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#99E2F4',
+    backgroundColor: '#2766E1',
     borderRadius: 28,
     paddingVertical: 20,
     paddingHorizontal: 48,
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#000000',
   },
   confirmationHeader: {
     alignItems: 'center',
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
   caseId: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#99E2F4',
+    color: '#2766E1',
     marginBottom: 32, // Added margin to separate from details
   },
   // Appointment Details styles
@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#99E2F4',
+    backgroundColor: '#2766E1',
   },
   pendingStepIndicator: {
     width: 24,
@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#99E2F4',
+    backgroundColor: '#2767E2',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -83,7 +83,7 @@ export const globalStyles = StyleSheet.create({
 
 export const colors = {
   // Primary healthcare colors from design system
-  primary: '#99e2f4',
+  primary: '#2766E1',
   primaryHappy: mentalWellnessDesignSystem.colorSystem.emotions.happy.primary,
   secondary: mentalWellnessDesignSystem.colorSystem.system.interactive.primary,
   background: mentalWellnessDesignSystem.colorSystem.system.background.light,
@@ -95,7 +95,7 @@ export const colors = {
   warning: mentalWellnessDesignSystem.colorSystem.system.interactive.warning,
   error: mentalWellnessDesignSystem.colorSystem.system.interactive.error,
   // Interactive elements
-  activeTab: '#99e2f4',
+  activeTab: '#2766E1',
   buttonPrimary: mentalWellnessDesignSystem.colorSystem.system.interactive.primary,
   buttonText: mentalWellnessDesignSystem.colorSystem.system.text.onDark,
 }; 

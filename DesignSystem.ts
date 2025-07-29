@@ -157,7 +157,7 @@ export const mentalWellnessDesignSystem = {
           }
         },
         icon: {
-          background: "#99E2F4",
+          background: "#2766E1",
           borderRadius: "50%",
           size: "72px"
         },
@@ -489,7 +489,7 @@ export const mentalWellnessDesignSystem = {
     onboardingScreens: {
       backgroundRule: "Use pure white (#FFFFFF) background for clean, minimal layout",
       cardRule: "Full-width white card with 16px corner radius and soft 8px blur shadow",
-      iconRule: "72px circle in sky blue (#99E2F4) with white person-plus icon",
+      iconRule: "72px circle in sky blue (#2766E1) with white person-plus icon",
       typographyRule: "Bold 24pt charcoal (#222) title, regular 14pt gray (#666) subtitle with 260px max-width",
       paddingRule: "32px top/bottom, 24px left/right internal padding"
     },

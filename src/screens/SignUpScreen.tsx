@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     width: 72, // 72px circle
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#99E2F4', // Sky blue background
+    backgroundColor: '#2766E1', // Sky blue background
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20, // 20px margin below icon
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   inputFocused: {
-    borderColor: '#99e2f4',
+    borderColor: '#2766E1',
     backgroundColor: mentalWellnessDesignSystem.colorSystem.system.background.light,
     elevation: 2,
     shadowColor: '#000',
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sendOtpButton: {
-    backgroundColor: '#99e2f4',
+    backgroundColor: '#2766E1',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     color: mentalWellnessDesignSystem.colorSystem.system.text.secondary,
   },
   linkText: {
-    color: '#99e2f4',
+    color: '#2767E2',
     fontWeight: '600',
   },
   actionSection: {
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
   },
   signInLink: {
     fontSize: 16,
-    color: '#99e2f4',
+    color: '#2767E2',
     fontWeight: '600',
   },
 });

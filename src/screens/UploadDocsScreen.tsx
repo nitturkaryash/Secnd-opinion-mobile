@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#99E2F4', // Sky blue from design system
+    backgroundColor: '#2766E1', // Sky blue from design system
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#99E2F4', // Sky blue for progress bar
+    backgroundColor: '#2766E1', // Sky blue for progress bar
     borderRadius: 4,
   },
   formContent: {
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
   },
   uploadCard: {
-    backgroundColor: '#99E2F4', // Sky blue for upload card
+    backgroundColor: '#2766E1', // Sky blue for upload card
     borderRadius: 24,
     padding: 24,
     elevation: 6,
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   inputFocused: {
-    borderColor: '#99E2F4', // Sky blue for focus state
+    borderColor: '#2766E1', // Sky blue for focus state
     backgroundColor: '#FFFFFF',
     elevation: 2,
     shadowColor: '#000',
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#99E2F4', // Sky blue for file icons
+    backgroundColor: '#2766E1', // Sky blue for file icons
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#99E2F4', // Sky blue for submit button
+    backgroundColor: '#2766E1', // Sky blue for submit button
     borderRadius: 28,
     paddingVertical: 20,
     paddingHorizontal: 48,
