@@ -1,20 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   SafeAreaView,
-  Alert,
+  ScrollView,
   FlatList,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
+
 import { globalStyles, colors } from '../styles/globalStyles';
 import mentalWellnessDesignSystem from '../../DesignSystem';
+import AnimatedScreen from '../components/AnimatedScreen';
+import { useNavigation } from '../context/NavigationContext';
 
 interface UploadedFile {
   id: string;
@@ -25,60 +28,65 @@ interface UploadedFile {
 }
 
 const UploadDocsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const [aadhaarNumber, setAadhaarNumber] = useState('');
-  const [description, setDescription] = useState('');
+  const { setDirection } = useNavigation();
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [description, setDescription] = useState('');
   const [focusedField, setFocusedField] = useState<string>('');
+
+  useEffect(() => {
+    requestPermissions();
+  }, []);
 
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission required', 'Camera roll permissions are needed to upload images.');
-      return false;
+      Alert.alert('Permission needed', 'Please grant camera and photo library permissions to upload documents.');
     }
-    return true;
   };
 
   const pickFromCamera = async () => {
-    const hasPermission = await requestPermissions();
-    if (!hasPermission) return;
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      const newFile: UploadedFile = {
-        id: Date.now().toString(),
-        name: `Camera_${Date.now()}.jpg`,
-        type: 'image',
-        uri: result.assets[0].uri,
-      };
-      setUploadedFiles(prev => [...prev, newFile]);
+      if (!result.canceled && result.assets[0]) {
+        const newFile: UploadedFile = {
+          id: Date.now().toString(),
+          name: `Camera_${Date.now()}.jpg`,
+          type: 'image',
+          uri: result.assets[0].uri,
+        };
+        setUploadedFiles(prev => [...prev, newFile]);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to capture image from camera');
     }
   };
 
   const pickFromGallery = async () => {
-    const hasPermission = await requestPermissions();
-    if (!hasPermission) return;
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      const newFiles: UploadedFile[] = result.assets.map((asset, index) => ({
-        id: `${Date.now()}_${index}`,
-        name: asset.fileName || `Image_${Date.now()}_${index}.jpg`,
-        type: 'image' as const,
-        uri: asset.uri,
-      }));
-      setUploadedFiles(prev => [...prev, ...newFiles]);
+      if (!result.canceled && result.assets[0]) {
+        const newFile: UploadedFile = {
+          id: Date.now().toString(),
+          name: result.assets[0].fileName || `Gallery_${Date.now()}.jpg`,
+          type: result.assets[0].type === 'video' ? 'document' : 'image',
+          uri: result.assets[0].uri,
+        };
+        setUploadedFiles(prev => [...prev, newFile]);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image from gallery');
     }
   };
 
@@ -86,18 +94,18 @@ const UploadDocsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'image/*'],
-        multiple: true,
+        copyToCacheDirectory: true,
       });
 
-      if (!result.canceled) {
-        const newFiles: UploadedFile[] = result.assets.map((asset, index) => ({
-          id: `${Date.now()}_${index}`,
-          name: asset.name,
-          type: asset.mimeType?.startsWith('image/') ? 'image' : 'document',
-          uri: asset.uri,
-          size: asset.size,
-        }));
-        setUploadedFiles(prev => [...prev, ...newFiles]);
+      if (!result.canceled && result.assets[0]) {
+        const newFile: UploadedFile = {
+          id: Date.now().toString(),
+          name: result.assets[0].name,
+          type: 'document',
+          uri: result.assets[0].uri,
+          size: result.assets[0].size,
+        };
+        setUploadedFiles(prev => [...prev, newFile]);
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to pick document');
@@ -111,39 +119,38 @@ const UploadDocsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const showUploadOptions = () => {
     Alert.alert(
       'Upload Options',
-      'Choose how you want to upload your documents',
+      'Choose how you want to upload files',
       [
         { text: 'Camera', onPress: pickFromCamera },
         { text: 'Gallery', onPress: pickFromGallery },
-        { text: 'Files', onPress: pickDocument },
+        { text: 'Documents', onPress: pickDocument },
         { text: 'Cancel', style: 'cancel' },
       ]
     );
   };
 
   const handleSubmit = () => {
-    if (!aadhaarNumber) {
-      Alert.alert('Error', 'Please enter your Aadhaar number');
-      return;
-    }
-
     if (uploadedFiles.length === 0) {
       Alert.alert('Error', 'Please upload at least one document');
       return;
     }
 
     if (!description.trim()) {
-      Alert.alert('Error', 'Please provide a description of your medical concern');
+      Alert.alert('Error', 'Please describe your medical concern');
       return;
     }
 
+    // Set direction for forward navigation
+    setDirection(1);
+    // @ts-ignore - navigation prop from tab navigator
     navigation.navigate('Schedule');
   };
 
   const formatFileSize = (size?: number) => {
     if (!size) return '';
-    const mb = size / (1024 * 1024);
-    return mb > 1 ? `${mb.toFixed(1)}MB` : `${(size / 1024).toFixed(0)}KB`;
+    const kb = size / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    return `${(kb / 1024).toFixed(1)} MB`;
   };
 
   const getInputStyle = (fieldName: string) => [
@@ -154,17 +161,13 @@ const UploadDocsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const renderFileItem = ({ item }: { item: UploadedFile }) => (
     <View style={styles.fileItem}>
       <View style={styles.fileInfo}>
-        <View style={styles.fileIconContainer}>
-          <Ionicons
-            name={item.type === 'image' ? 'image' : 'document'}
-            size={24}
-            color={mentalWellnessDesignSystem.colorSystem.system.text.onDark}
-          />
-        </View>
+        <Ionicons 
+          name={item.type === 'image' ? 'image' : 'document'} 
+          size={24} 
+          color="#2766E1"
+        />
         <View style={styles.fileDetails}>
-          <Text style={styles.fileName} numberOfLines={1}>
-            {item.name}
-          </Text>
+          <Text style={styles.fileName}>{item.name}</Text>
           {item.size && (
             <Text style={styles.fileSize}>{formatFileSize(item.size)}</Text>
           )}
@@ -174,88 +177,62 @@ const UploadDocsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         style={styles.removeButton}
         onPress={() => removeFile(item.id)}
       >
-        <Ionicons name="close-circle" size={24} color={colors.error} />
+        <Ionicons name="close-circle" size={24} color="#FF3B30" />
       </TouchableOpacity>
     </View>
   );
 
   return (
-    <SafeAreaView style={[globalStyles.container, styles.container]}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.content}>
-          {/* Header */}
+    <AnimatedScreen direction={1} screenKey="Upload">
+      <SafeAreaView style={[globalStyles.container, styles.container]}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+
+
+          {/* Header Section */}
           <View style={styles.header}>
             <View style={styles.headerIcon}>
               <Ionicons 
                 name="cloud-upload" 
-                size={32} 
-                color={mentalWellnessDesignSystem.colorSystem.system.text.onDark}
+                size={36} 
+                color="#FFFFFF"
               />
             </View>
             <Text style={styles.title}>Upload Documents</Text>
             <Text style={styles.subtitle}>
-              Upload your medical reports, prescriptions, and relevant documents
+              Upload your medical documents, reports, and images for expert review
             </Text>
           </View>
 
-          {/* Progress Indicator */}
-          <View style={styles.progressCard}>
-            <Text style={styles.progressLabel}>Step 3 of 4</Text>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: '75%' }]} />
-            </View>
-          </View>
-
-          {/* Form Content */}
-          <View style={styles.formContent}>
-            {/* Patient Information Card */}
-            <View style={styles.formCard}>
-              <Text style={styles.cardHeader}>Patient Information</Text>
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Aadhaar Number</Text>
-                <TextInput
-                  style={getInputStyle('aadhaar')}
-                  placeholder="Enter your 12-digit Aadhaar number"
-                  placeholderTextColor={mentalWellnessDesignSystem.colorSystem.system.text.secondary}
-                  value={aadhaarNumber}
-                  onChangeText={(text) => setAadhaarNumber(text.replace(/\D/g, '').slice(0, 12))}
-                  onFocus={() => setFocusedField('aadhaar')}
-                  onBlur={() => setFocusedField('')}
-                  keyboardType="numeric"
-                  maxLength={12}
-                />
+          {/* Content */}
+          <View style={styles.content}>
+            {/* Upload Section */}
+            <View style={styles.uploadSection}>
+              <View style={styles.uploadCard}>
+                <TouchableOpacity
+                  style={styles.uploadButton}
+                  onPress={showUploadOptions}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.uploadIcon}>
+                    <Ionicons 
+                      name="cloud-upload-outline" 
+                      size={48} 
+                      color="#2766E1"
+                    />
+                  </View>
+                  <Text style={styles.uploadTitle}>Upload Files</Text>
+                  <Text style={styles.uploadSubtitle}>
+                    Tap to select files from your device
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
 
-            {/* Document Upload Card */}
-            <View style={styles.uploadCard}>
-              <Text style={styles.cardHeader}>Medical Documents</Text>
-              
-              <TouchableOpacity
-                style={styles.uploadButton}
-                onPress={showUploadOptions}
-                activeOpacity={0.8}
-              >
-                <View style={styles.uploadIconContainer}>
-                  <Ionicons name="cloud-upload-outline" size={48} color={mentalWellnessDesignSystem.colorSystem.system.text.onDark} />
-                </View>
-                <Text style={styles.uploadButtonText}>Upload Documents</Text>
-                <Text style={styles.uploadSubtext}>
-                  Tap to select from camera, gallery, or files
-                </Text>
-              </TouchableOpacity>
-
-              <View style={styles.supportedFormats}>
-                <Text style={styles.supportedText}>
-                  📄 Supported formats: JPEG, PNG, PDF
-                </Text>
-              </View>
-            </View>
-
-            {/* File List Card */}
+            {/* File List - Using FlatList with scrollEnabled={false} to avoid nesting warning */}
             {uploadedFiles.length > 0 && (
               <View style={styles.fileListCard}>
                 <Text style={styles.cardHeader}>Uploaded Files ({uploadedFiles.length})</Text>
@@ -303,14 +280,14 @@ const UploadDocsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 <Ionicons 
                   name="arrow-forward" 
                   size={20} 
-                  color={mentalWellnessDesignSystem.elementStyling.buttons.primary.default.color}
+                  color="#FFFFFF"
                 />
               </TouchableOpacity>
             </View>
           </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </AnimatedScreen>
   );
 };
 
@@ -320,8 +297,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 120,
+    paddingBottom: 20,
   },
+
   content: {
     flex: 1,
     paddingHorizontal: 24,
@@ -348,7 +326,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#000000',
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -356,7 +334,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     textAlign: 'center',
-    color: '#FFFFFF',
+    color: '#000000',
     paddingHorizontal: 20,
   },
   progressCard: {
@@ -371,24 +349,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
   },
-  progressLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 12,
-  },
-  progressBar: {
-    width: '100%',
-    height: 8,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#2766E1', // Sky blue for progress bar
-    borderRadius: 4,
-  },
+
   formContent: {
     gap: 24,
   },
@@ -402,6 +363,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 16,
   },
+  uploadSection: {
+    marginBottom: 24,
+  },
   uploadCard: {
     backgroundColor: '#2766E1', // Sky blue for upload card
     borderRadius: 24,
@@ -411,6 +375,22 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
     shadowRadius: 20,
+  },
+  uploadIcon: {
+    marginBottom: 16,
+  },
+  uploadTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  uploadSubtitle: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    opacity: 0.9,
   },
   fileListCard: {
     backgroundColor: '#FFFFFF',
@@ -425,7 +405,7 @@ const styles = StyleSheet.create({
   cardHeader: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#000000',
     marginBottom: 20,
   },
   inputContainer: {
@@ -434,7 +414,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -573,6 +553,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginRight: 12,
   },
+
 });
 
 export default UploadDocsScreen; 

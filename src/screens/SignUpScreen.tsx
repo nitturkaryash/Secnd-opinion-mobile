@@ -12,6 +12,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { globalStyles, colors } from '../styles/globalStyles';
 import mentalWellnessDesignSystem from '../../DesignSystem';
+import AnimatedScreen from '../components/AnimatedScreen';
+import { useNavigation } from '../context/NavigationContext';
+
 
 interface FormData {
   emailPhone: string;
@@ -23,6 +26,7 @@ interface FormData {
 }
 
 const SignUpScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const { setDirection } = useNavigation();
   const [formData, setFormData] = useState<FormData>({
     emailPhone: '',
     password: '',
@@ -73,6 +77,9 @@ const SignUpScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       return;
     }
 
+    // Set direction for forward navigation
+    setDirection(1);
+    // @ts-ignore - navigation prop from tab navigator
     navigation.navigate('Upload');
   };
 
@@ -82,190 +89,190 @@ const SignUpScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   ];
 
   return (
-    <SafeAreaView style={[globalStyles.container, styles.container]}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Header Section */}
-        <View style={styles.header}>
-          <View style={styles.headerCard}>
-            <View style={styles.headerIcon}>
-              <Ionicons 
-                name="person-add" 
-                size={32} 
-                color="#FFFFFF"
-              />
-            </View>
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>
-              Join thousands of users getting expert medical opinions
-            </Text>
-          </View>
-        </View>
+    <AnimatedScreen direction={1} screenKey="SignUp">
+      <SafeAreaView style={[globalStyles.container, styles.container]}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
 
-        {/* Form Content */}
-        <View style={styles.content}>
-          <View style={styles.formSections}>
-            {/* Basic Information Card */}
-            <View style={styles.formCard}>
-              <Text style={styles.cardHeader}>Basic Information</Text>
-              
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email or Phone Number</Text>
-                <TextInput
-                  style={getInputStyle('emailPhone')}
-                  placeholder="Enter your email or phone number"
-                  placeholderTextColor={mentalWellnessDesignSystem.colorSystem.system.text.secondary}
-                  value={formData.emailPhone}
-                  onChangeText={(text) => updateFormData('emailPhone', text)}
-                  onFocus={() => setFocusedField('emailPhone')}
-                  onBlur={() => setFocusedField('')}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Password</Text>
-                <View style={styles.passwordContainer}>
-                  <TextInput
-                    style={[getInputStyle('password'), styles.passwordInput]}
-                    placeholder="Enter your password"
-                    placeholderTextColor={mentalWellnessDesignSystem.colorSystem.system.text.secondary}
-                    value={formData.password}
-                    onChangeText={(text) => updateFormData('password', text)}
-                    onFocus={() => setFocusedField('password')}
-                    onBlur={() => setFocusedField('')}
-                    secureTextEntry={!passwordVisible}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeIcon}
-                    onPress={() => setPasswordVisible(!passwordVisible)}
-                  >
-                    <Ionicons
-                      name={passwordVisible ? 'eye' : 'eye-off'}
-                      size={20}
-                      color={mentalWellnessDesignSystem.colorSystem.system.text.secondary}
-                    />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Confirm Password</Text>
-                <TextInput
-                  style={getInputStyle('confirmPassword')}
-                  placeholder="Confirm your password"
-                  placeholderTextColor={mentalWellnessDesignSystem.colorSystem.system.text.secondary}
-                  value={formData.confirmPassword}
-                  onChangeText={(text) => updateFormData('confirmPassword', text)}
-                  onFocus={() => setFocusedField('confirmPassword')}
-                  onBlur={() => setFocusedField('')}
-                  secureTextEntry={true}
-                />
-              </View>
-            </View>
-
-            {/* Verification Card */}
-            <View style={styles.formCard}>
-              <Text style={styles.cardHeader}>Verification</Text>
-              
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Aadhaar Number</Text>
-                <TextInput
-                  style={getInputStyle('aadhaar')}
-                  placeholder="Enter your 12-digit Aadhaar number"
-                  placeholderTextColor={mentalWellnessDesignSystem.colorSystem.system.text.secondary}
-                  value={formData.aadhaar}
-                  onChangeText={(text) => updateFormData('aadhaar', text.replace(/\D/g, '').slice(0, 12))}
-                  onFocus={() => setFocusedField('aadhaar')}
-                  onBlur={() => setFocusedField('')}
-                  keyboardType="numeric"
-                  maxLength={12}
-                />
-              </View>
-
-              <View style={styles.otpSection}>
-                <View style={styles.otpHeader}>
-                  <Text style={styles.label}>OTP Verification</Text>
-                  <TouchableOpacity
-                    style={styles.sendOtpButton}
-                    onPress={sendOtp}
-                    disabled={otpSent}
-                  >
-                    <Text style={[styles.sendOtpText, otpSent && styles.sentOtpText]}>
-                      {otpSent ? 'OTP Sent ✓' : 'Send OTP'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                <TextInput
-                  style={getInputStyle('otp')}
-                  placeholder="Enter 6-digit OTP"
-                  placeholderTextColor={mentalWellnessDesignSystem.colorSystem.system.text.secondary}
-                  value={formData.otp}
-                  onChangeText={(text) => updateFormData('otp', text.replace(/\D/g, '').slice(0, 6))}
-                  onFocus={() => setFocusedField('otp')}
-                  onBlur={() => setFocusedField('')}
-                  keyboardType="numeric"
-                  maxLength={6}
-                  editable={otpSent}
-                />
-              </View>
-            </View>
-
-            {/* Terms Card */}
-            <View style={styles.termsCard}>
-              <TouchableOpacity
-                style={styles.checkboxContainer}
-                onPress={() => updateFormData('termsAccepted', !formData.termsAccepted)}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.checkbox, formData.termsAccepted && styles.checkedBox]}>
-                  {formData.termsAccepted && (
-                    <Ionicons 
-                      name="checkmark" 
-                      size={16} 
-                      color={mentalWellnessDesignSystem.colorSystem.system.text.onDark} 
-                    />
-                  )}
-                </View>
-                <Text style={styles.checkboxText}>
-                  I accept the{' '}
-                  <Text style={styles.linkText}>Terms and Conditions</Text>
-                  {' '}and{' '}
-                  <Text style={styles.linkText}>Privacy Policy</Text>
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Action Buttons */}
-            <View style={styles.actionSection}>
-              <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleSignUp}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.submitButtonText}>Create Account</Text>
+          {/* Header Section */}
+          <View style={styles.header}>
+            <View style={styles.headerCard}>
+              <View style={styles.headerIcon}>
                 <Ionicons 
-                  name="arrow-forward" 
-                  size={20} 
-                  color={mentalWellnessDesignSystem.elementStyling.buttons.primary.default.color}
+                  name="person-add" 
+                  size={32} 
+                  color="#FFFFFF"
                 />
-              </TouchableOpacity>
+              </View>
+              <Text style={styles.title}>Create Account</Text>
+              <Text style={styles.subtitle}>
+                Join thousands of users getting expert medical opinions
+              </Text>
+            </View>
+          </View>
 
-              <View style={styles.signInContainer}>
-                <Text style={styles.signInText}>Already have an account?</Text>
-                <TouchableOpacity style={styles.signInButton}>
-                  <Text style={styles.signInLink}>Sign In</Text>
+          {/* Form Content */}
+          <View style={styles.content}>
+            <View style={styles.formSections}>
+              {/* Basic Information Card */}
+              <View style={styles.formCard}>
+                <Text style={styles.cardHeader}>Basic Information</Text>
+                
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Email or Phone Number</Text>
+                  <TextInput
+                    style={getInputStyle('emailPhone')}
+                    placeholder="Enter your email or phone number"
+                    placeholderTextColor={mentalWellnessDesignSystem.colorSystem.system.text.secondary}
+                    value={formData.emailPhone}
+                    onChangeText={(text) => updateFormData('emailPhone', text)}
+                    onFocus={() => setFocusedField('emailPhone')}
+                    onBlur={() => setFocusedField('')}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Password</Text>
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      style={[getInputStyle('password'), styles.passwordInput]}
+                      placeholder="Enter your password"
+                      placeholderTextColor={mentalWellnessDesignSystem.colorSystem.system.text.secondary}
+                      value={formData.password}
+                      onChangeText={(text) => updateFormData('password', text)}
+                      onFocus={() => setFocusedField('password')}
+                      onBlur={() => setFocusedField('')}
+                      secureTextEntry={!passwordVisible}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeIcon}
+                      onPress={() => setPasswordVisible(!passwordVisible)}
+                    >
+                      <Ionicons
+                        name={passwordVisible ? 'eye' : 'eye-off'}
+                        size={20}
+                        color="#2766E1"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Confirm Password</Text>
+                  <TextInput
+                    style={getInputStyle('confirmPassword')}
+                    placeholder="Confirm your password"
+                    placeholderTextColor={mentalWellnessDesignSystem.colorSystem.system.text.secondary}
+                    value={formData.confirmPassword}
+                    onChangeText={(text) => updateFormData('confirmPassword', text)}
+                    onFocus={() => setFocusedField('confirmPassword')}
+                    onBlur={() => setFocusedField('')}
+                    secureTextEntry={true}
+                  />
+                </View>
+              </View>
+
+              {/* Verification Card */}
+              <View style={styles.formCard}>
+                <Text style={styles.cardHeader}>Verification</Text>
+                
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Aadhaar Number</Text>
+                  <TextInput
+                    style={getInputStyle('aadhaar')}
+                    placeholder="Enter your 12-digit Aadhaar number"
+                    placeholderTextColor={mentalWellnessDesignSystem.colorSystem.system.text.secondary}
+                    value={formData.aadhaar}
+                    onChangeText={(text) => updateFormData('aadhaar', text.replace(/\D/g, '').slice(0, 12))}
+                    onFocus={() => setFocusedField('aadhaar')}
+                    onBlur={() => setFocusedField('')}
+                    keyboardType="numeric"
+                    maxLength={12}
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>OTP Verification</Text>
+                  <View style={styles.otpContainer}>
+                    <TextInput
+                      style={[getInputStyle('otp'), styles.otpInput]}
+                      placeholder="Enter 6-digit OTP"
+                      placeholderTextColor={mentalWellnessDesignSystem.colorSystem.system.text.secondary}
+                      value={formData.otp}
+                      onChangeText={(text) => updateFormData('otp', text.replace(/\D/g, '').slice(0, 6))}
+                      onFocus={() => setFocusedField('otp')}
+                      onBlur={() => setFocusedField('')}
+                      keyboardType="numeric"
+                      maxLength={6}
+                    />
+                    <TouchableOpacity
+                      style={styles.sendOtpButton}
+                      onPress={sendOtp}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.sendOtpText}>Send OTP</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              {/* Terms and Conditions */}
+              <View style={styles.formCard}>
+                <TouchableOpacity
+                  style={styles.checkboxContainer}
+                  onPress={() => updateFormData('termsAccepted', !formData.termsAccepted)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.checkbox, formData.termsAccepted && styles.checkedBox]}>
+                    {formData.termsAccepted && (
+                      <Ionicons 
+                        name="checkmark" 
+                        size={16} 
+                        color="#2766E1" 
+                      />
+                    )}
+                  </View>
+                  <Text style={styles.checkboxText}>
+                    I accept the{' '}
+                    <Text style={styles.linkText}>Terms and Conditions</Text>
+                    {' '}and{' '}
+                    <Text style={styles.linkText}>Privacy Policy</Text>
+                  </Text>
                 </TouchableOpacity>
               </View>
+
+              {/* Action Buttons */}
+              <View style={styles.actionSection}>
+                <TouchableOpacity
+                  style={styles.submitButton}
+                  onPress={handleSignUp}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.submitButtonText}>Create Account</Text>
+                  <Ionicons 
+                    name="arrow-forward" 
+                    size={20} 
+                    color="#2766E1"
+                  />
+                </TouchableOpacity>
+
+                <View style={styles.signInContainer}>
+                  <Text style={styles.signInText}>Already have an account?</Text>
+                  <TouchableOpacity style={styles.signInButton}>
+                    <Text style={styles.signInLink}>Sign In</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
           </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </AnimatedScreen>
   );
 };
 
@@ -273,10 +280,11 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF', // Changed to pure white background
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 120,
-  },
+      scrollContent: {
+      flexGrow: 1,
+
+      paddingBottom: 20,
+    },
   content: {
     flex: 1,
     paddingHorizontal: 24,

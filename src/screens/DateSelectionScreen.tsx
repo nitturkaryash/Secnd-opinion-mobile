@@ -3,15 +3,16 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   SafeAreaView,
-  Alert,
   FlatList,
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { globalStyles, colors } from '../styles/globalStyles';
+import AnimatedScreen from '../components/AnimatedScreen';
+import { useNavigation } from '../context/NavigationContext';
+
 
 interface TimeSlot {
   id: string;
@@ -32,35 +33,26 @@ interface AppointmentDetails {
 }
 
 const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const { setDirection } = useNavigation();
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
-  const [isConfirmationView, setIsConfirmationView] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState<AppointmentDetails | null>(null);
 
-  // Generate calendar dates for current month
   const generateCalendarDates = () => {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
-    
     const dates = [];
+    const today = new Date();
     
-    // Add empty cells for days before the first day of month
-    for (let i = 0; i < firstDayOfMonth; i++) {
-      dates.push({ date: '', disabled: true, key: `empty-${i}` });
-    }
-    
-    // Add actual dates
-    for (let i = 1; i <= daysInMonth; i++) {
-      const date = new Date(currentYear, currentMonth, i);
-      const isDisabled = date < today || date.getDay() === 0; // Disable past dates and Sundays
+    for (let i = 0; i < 30; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      
       dates.push({
-        date: i.toString(),
-        disabled: isDisabled,
-        key: `date-${i}`,
-        fullDate: `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`,
+        id: i.toString(),
+        date: date.getDate().toString(),
+        fullDate: date.toISOString().split('T')[0],
+        day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        isToday: i === 0,
+        isSelected: selectedDate === date.toISOString().split('T')[0],
       });
     }
     
@@ -70,11 +62,12 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const timeSlots: TimeSlot[] = [
     { id: '1', time: '09:00 AM', available: true },
     { id: '2', time: '10:00 AM', available: true },
-    { id: '3', time: '11:00 AM', available: false },
-    { id: '4', time: '02:00 PM', available: true },
-    { id: '5', time: '03:00 PM', available: true },
-    { id: '6', time: '04:00 PM', available: false },
-    { id: '7', time: '05:00 PM', available: true },
+    { id: '3', time: '11:00 AM', available: true },
+    { id: '4', time: '12:00 PM', available: false },
+    { id: '5', time: '02:00 PM', available: true },
+    { id: '6', time: '03:00 PM', available: true },
+    { id: '7', time: '04:00 PM', available: true },
+    { id: '8', time: '05:00 PM', available: true },
   ];
 
   const handleDateSelect = (date: string, fullDate: string) => {
@@ -87,26 +80,28 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const handleConfirm = () => {
     if (!selectedDate || !selectedTime) {
-      Alert.alert('Please select both date and time');
       return;
     }
 
-    const caseId = `CASE-${Date.now().toString().slice(-6)}`;
+    // Generate a random case ID
+    const caseId = `CASE-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    
     const details: AppointmentDetails = {
       caseId,
       selectedDate,
       selectedTime,
       status: 'confirmed',
       timeline: [
-        { step: 'Documents Uploaded', status: 'completed', date: new Date().toISOString().split('T')[0] },
-        { step: 'Appointment Scheduled', status: 'completed', date: new Date().toISOString().split('T')[0] },
+        { step: 'Account Created', status: 'completed', date: 'Today' },
+        { step: 'Documents Uploaded', status: 'completed', date: 'Today' },
+        { step: 'Appointment Scheduled', status: 'completed', date: 'Today' },
         { step: 'Doctor Review', status: 'current' },
-        { step: 'Consultation', status: 'pending' },
-        { step: 'Report Delivery', status: 'pending' },
+        { step: 'Second Opinion Report', status: 'pending' },
+        { step: 'Report Delivered', status: 'pending' },
       ],
     };
+
     setAppointmentDetails(details);
-    setIsConfirmationView(true);
   };
 
   const formatDate = (dateString: string) => {
@@ -119,143 +114,85 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     });
   };
 
-  const renderCalendarDate = ({ item }: { item: any }) => {
-    if (!item.date) {
-      return <View style={styles.emptyDate} />;
-    }
+  const renderCalendarDate = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      style={[
+        styles.calendarDate,
+        item.isToday && styles.todayDate,
+        item.isSelected && styles.selectedDate,
+      ]}
+      onPress={() => handleDateSelect(item.date, item.fullDate)}
+      activeOpacity={0.8}
+    >
+      <Text style={[
+        styles.dateText,
+        item.isToday && styles.todayText,
+        item.isSelected && styles.selectedDateText,
+      ]}>
+        {item.date}
+      </Text>
+      <Text style={[
+        styles.dayText,
+        item.isToday && styles.todayText,
+        item.isSelected && styles.selectedDateText,
+      ]}>
+        {item.day}
+      </Text>
+    </TouchableOpacity>
+  );
 
-    const isSelected = selectedDate === item.fullDate;
-    
-    return (
-      <TouchableOpacity
-        style={[
-          styles.dateCell,
-          item.disabled && styles.disabledDate,
-          isSelected && styles.selectedDate,
-        ]}
-        onPress={() => !item.disabled && handleDateSelect(item.date, item.fullDate)}
-        disabled={item.disabled}
-        activeOpacity={0.8}
-      >
-        <Text
-          style={[
-            styles.dateText,
-            item.disabled && styles.disabledDateText,
-            isSelected && styles.selectedDateText,
-          ]}
-        >
-          {item.date}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderTimeSlot = ({ item }: { item: TimeSlot }) => {
-    const isSelected = selectedTime === item.time;
-    
-    return (
-      <TouchableOpacity
-        style={[
-          styles.timeSlot,
-          !item.available && styles.unavailableSlot,
-          isSelected && styles.selectedTimeSlot,
-        ]}
-        onPress={() => item.available && handleTimeSelect(item.time)}
-        disabled={!item.available}
-        activeOpacity={0.8}
-      >
-        <Text
-          style={[
-            styles.timeSlotText,
-            !item.available && styles.unavailableSlotText,
-            isSelected && styles.selectedTimeSlotText,
-          ]}
-        >
-          {item.time}
-        </Text>
-        {!item.available && (
-          <Text style={styles.unavailableLabel}>Booked</Text>
-        )}
-      </TouchableOpacity>
-    );
-  };
+  const renderTimeSlot = ({ item }: { item: TimeSlot }) => (
+    <TouchableOpacity
+      style={[
+        styles.timeSlot,
+        !item.available && styles.unavailableTimeSlot,
+        selectedTime === item.time && styles.selectedTimeSlot,
+      ]}
+      onPress={() => item.available && handleTimeSelect(item.time)}
+      disabled={!item.available}
+      activeOpacity={0.8}
+    >
+      <Text style={[
+        styles.timeText,
+        !item.available && styles.unavailableTimeText,
+        selectedTime === item.time && styles.selectedTimeText,
+      ]}>
+        {item.time}
+      </Text>
+    </TouchableOpacity>
+  );
 
   const renderSelectionView = () => (
     <View style={styles.content}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerIcon}>
-          <Ionicons 
-            name="calendar" 
-            size={32} 
-            color="#FFFFFF"
-          />
-        </View>
-        <Text style={styles.headerTitle}>Schedule Appointment</Text>
-        <Text style={styles.headerSubtitle}>
-          Choose your preferred date and time
-        </Text>
+
+      {/* Calendar Section */}
+      <View style={styles.calendarCard}>
+        <Text style={styles.cardHeader}>Select Date</Text>
+        <FlatList
+          data={generateCalendarDates()}
+          renderItem={renderCalendarDate}
+          keyExtractor={(item) => item.id}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.calendarContainer}
+        />
       </View>
 
-      <View style={styles.selectionContainer}>
-        {/* Date Selection */}
-        <View style={styles.calendarSection}>
-          <Text style={styles.sectionTitle}>Select Date</Text>
-          <View style={styles.calendarCard}>
-            <Text style={styles.monthYear}>
-              {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </Text>
-            
-            <View style={styles.weekDays}>
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                <Text key={day} style={styles.weekDay}>{day}</Text>
-              ))}
-            </View>
-            
-            <FlatList
-              data={generateCalendarDates()}
-              renderItem={renderCalendarDate}
-              keyExtractor={(item) => item.key}
-              numColumns={7}
-              scrollEnabled={false}
-              contentContainerStyle={styles.calendar}
-            />
-          </View>
-        </View>
+      {/* Time Slots Section */}
+      <View style={styles.timeCard}>
+        <Text style={styles.cardHeader}>Select Time</Text>
+        <FlatList
+          data={timeSlots}
+          renderItem={renderTimeSlot}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.timeRow}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
 
-        {/* Time Selection */}
-        <View style={styles.timeSection}>
-          <Text style={styles.sectionTitle}>Select Time</Text>
-          <View style={styles.timeSlotsCard}>
-            <FlatList
-              data={timeSlots}
-              renderItem={renderTimeSlot}
-              keyExtractor={(item) => item.id}
-              numColumns={2}
-              scrollEnabled={false}
-              contentContainerStyle={styles.timeSlotsContainer}
-            />
-          </View>
-        </View>
-
-        {/* Selection Summary */}
-        {(selectedDate || selectedTime) && (
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>Your Selection</Text>
-            {selectedDate && (
-              <Text style={styles.summaryText}>
-                Date: {formatDate(selectedDate)}
-              </Text>
-            )}
-            {selectedTime && (
-              <Text style={styles.summaryText}>
-                Time: {selectedTime}
-              </Text>
-            )}
-          </View>
-        )}
-
-        {/* Confirm Button */}
+      {/* Confirmation Button */}
+      <View style={styles.actionSection}>
         <TouchableOpacity
           style={[
             styles.confirmButton,
@@ -271,7 +208,6 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       </View>
     </View>
   );
-  
 
   const renderConfirmationView = () => {
     if (!appointmentDetails) return null;
@@ -347,26 +283,40 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           </View>
         </View>
         
-        <TouchableOpacity
-          style={styles.doneButton}
-          onPress={() => navigation.navigate('Welcome')}
-          activeOpacity={0.8}
-        >
+                  <TouchableOpacity
+            style={styles.doneButton}
+            onPress={() => {
+              setDirection(-1);
+              // @ts-ignore - navigation prop from tab navigator
+              navigation.navigate('Welcome');
+            }}
+            activeOpacity={0.8}
+          >
           <Text style={styles.doneButtonText}>Done</Text>
         </TouchableOpacity>
       </View>
     );
   };
 
+  const renderHeader = () => (
+    <View>
+
+      {appointmentDetails ? renderConfirmationView() : renderSelectionView()}
+    </View>
+  );
+
   return (
-    <SafeAreaView style={[globalStyles.container, styles.container]}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {!isConfirmationView ? renderSelectionView() : renderConfirmationView()}
-      </ScrollView>
-    </SafeAreaView>
+    <AnimatedScreen direction={1} screenKey="Schedule">
+      <SafeAreaView style={[globalStyles.container, styles.container]}>
+        <FlatList
+          data={[]}
+          renderItem={() => null}
+          ListHeaderComponent={renderHeader}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        />
+      </SafeAreaView>
+    </AnimatedScreen>
   );
 };
 
@@ -376,12 +326,14 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 120,
+    paddingBottom: 20,
   },
+
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 24, // Increased from 20 to 24 (8px grid)
+    gap: 24, // Added consistent gap between sections (8px grid)
   },
   header: {
     alignItems: 'center',
@@ -435,6 +387,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 24,
+    marginBottom: 24, // Added consistent margin bottom (8px grid)
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -600,7 +553,7 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFFFFF',
   },
   confirmationHeader: {
     alignItems: 'center',
@@ -745,6 +698,113 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+
+  calendarContainer: {
+    paddingHorizontal: 12, // Increased from 10 to 12 (4px grid)
+    paddingVertical: 8, // Added vertical padding for better spacing
+  },
+  calendarDate: {
+    width: 64, // Increased from 60 to 64 (8px grid)
+    height: 80,
+    marginHorizontal: 12, // Increased from 8 to 12 (4px grid)
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: '#F8F8F8',
+  },
+  todayDate: {
+    backgroundColor: '#2766E1',
+  },
+  dateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333333',
+  },
+  dayText: {
+    fontSize: 14,
+    color: '#666666',
+    marginTop: 4,
+  },
+  todayText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  selectedDate: {
+    backgroundColor: '#2766E1',
+  },
+  timeCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 32, // Increased from 24 to 32 (8px grid)
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+  },
+  cardHeader: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333333',
+    marginBottom: 24, // Increased from 16 to 24 (8px grid)
+  },
+  timeRow: {
+    justifyContent: 'space-between',
+    marginBottom: 16, // Added 16px spacing between rows (8px grid)
+  },
+  timeSlot: {
+    flex: 1,
+    marginHorizontal: 12, // Increased from 8 to 12 (4px grid)
+    paddingVertical: 20, // Reduced from 24 to 20 for better proportion
+    paddingHorizontal: 16, // Reduced from 20 to 16 (4px grid)
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8F8F8',
+    minHeight: 72, // Reduced from 80 to 72 (8px grid)
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+  },
+  unavailableTimeSlot: {
+    backgroundColor: '#F8F8F8',
+    opacity: 0.7,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  selectedTimeSlot: {
+    backgroundColor: '#2766E1',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+  },
+  timeText: {
+    fontSize: 16, // Slightly reduced for better proportion
+    fontWeight: '600',
+    color: '#333333',
+    textAlign: 'center',
+    lineHeight: 20, // Added line height for better readability
+  },
+  unavailableTimeText: {
+    color: '#999999',
+    textDecorationLine: 'line-through',
+  },
+  selectedTimeText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  actionSection: {
+    marginTop: 40, // Increased from 32 to 40 (8px grid)
+    paddingHorizontal: 8, // Added horizontal padding for better alignment
+  },
+  progressContainer: {
+    marginBottom: 24,
   },
 });
 
