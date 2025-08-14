@@ -12,6 +12,9 @@ import WelcomeScreen from '../screens/WelcomeScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import UploadDocsScreen from '../screens/UploadDocsScreen';
 import DateSelectionScreen from '../screens/DateSelectionScreen';
+import SignInScreen from '../screens/SignInScreen';
+import ProfileSetupScreen from '../screens/ProfileSetupScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -41,10 +44,20 @@ const ScheduleStepScreen: React.FC<any> = (props) => (
   </StepLayout>
 );
 
+const ProfileStepScreen: React.FC<any> = (props) => (
+  <StepLayout currentStep={0} totalSteps={4}>
+    <ProfileScreen {...props} />
+  </StepLayout>
+);
+
 // Stack Navigator for each tab
 const WelcomeStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="WelcomeMain" component={WelcomeStepScreen} />
+    <Stack.Screen name="SignIn" component={SignInScreen} />
+    <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+    <Stack.Screen name="Upload" component={UploadStepScreen} />
+    <Stack.Screen name="Schedule" component={ScheduleStepScreen} />
   </Stack.Navigator>
 );
 
@@ -60,9 +73,21 @@ const UploadStack = () => (
   </Stack.Navigator>
 );
 
+const ProfileSetupStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="ProfileSetupMain" component={ProfileSetupScreen} />
+  </Stack.Navigator>
+);
+
 const ScheduleStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="ScheduleMain" component={ScheduleStepScreen} />
+  </Stack.Navigator>
+);
+
+const ProfileStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="ProfileMain" component={ProfileStepScreen} />
   </Stack.Navigator>
 );
 
@@ -90,11 +115,13 @@ const StepNavigator: React.FC = () => {
             if (route.name === 'Welcome') {
               iconName = 'home';
             } else if (route.name === 'SignUp') {
-              iconName = 'person';
+              iconName = 'person-add';
             } else if (route.name === 'Upload') {
               iconName = 'cloud-upload';
             } else if (route.name === 'Schedule') {
               iconName = 'calendar';
+            } else if (route.name === 'Profile') {
+              iconName = 'person';
             } else {
               iconName = 'home';
             }
@@ -135,6 +162,10 @@ const StepNavigator: React.FC = () => {
         <Tab.Screen 
           name="Schedule" 
           component={ScheduleStack}
+        />
+        <Tab.Screen 
+          name="Profile" 
+          component={ProfileStack}
         />
       </Tab.Navigator>
     </NavigationContainer>

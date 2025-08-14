@@ -14,6 +14,8 @@ import { globalStyles, colors } from '../styles/globalStyles';
 import mentalWellnessDesignSystem from '../../DesignSystem';
 import AnimatedScreen from '../components/AnimatedScreen';
 import { useNavigation } from '../context/NavigationContext';
+import supabase from '../lib/supabase';
+import { TablesInsert } from '../types/database.types';
 
 
 interface FormData {
@@ -39,6 +41,8 @@ const SignUpScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [focusedField, setFocusedField] = useState<string>('');
   const [otpSent, setOtpSent] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
 
   const updateFormData = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({
@@ -47,16 +51,31 @@ const SignUpScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     }));
   };
 
-  const sendOtp = () => {
+  const sendOtp = async () => {
     if (!formData.emailPhone) {
       Alert.alert('Error', 'Please enter email or phone number');
       return;
     }
-    setOtpSent(true);
-    Alert.alert('Success', 'OTP sent successfully!');
+    setLoading(true);
+    setError('');
+    const { error } = await supabase.auth.signInWithOtp({
+      email: formData.emailPhone,
+      options: {
+        shouldCreateUser: true,
+      },
+    });
+
+    if (error) {
+      setError(error.message);
+      Alert.alert('Error sending OTP', error.message);
+    } else {
+      setOtpSent(true);
+      Alert.alert('Success', 'OTP sent successfully!');
+    }
+    setLoading(false);
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (!formData.emailPhone || !formData.password || !formData.aadhaar) {
       Alert.alert('Error', 'Please fill all required fields');
       return;
@@ -77,10 +96,46 @@ const SignUpScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       return;
     }
 
-    // Set direction for forward navigation
-    setDirection(1);
-    // @ts-ignore - navigation prop from tab navigator
-    navigation.navigate('Upload');
+    setLoading(true);
+    setError('');
+
+    const { data: { session }, error: verifyError } = await supabase.auth.verifyOtp({
+      email: formData.emailPhone,
+      token: formData.otp,
+      type: 'email',
+    });
+
+    if (verifyError) {
+      setError(verifyError.message);
+      Alert.alert('Error verifying OTP', verifyError.message);
+      setLoading(false);
+      return;
+    }
+
+    if (session?.user) {
+      const patientData: TablesInsert<'patients'> = {
+        id: session.user.id,
+        name: 'New Patient', // Placeholder, ideally from another form field
+        // aadhaar_number: formData.aadhaar, // Assuming you add this column
+        email: formData.emailPhone,
+      };
+
+      const { error: insertError } = await supabase.from('patients').insert(patientData);
+
+      if (insertError) {
+        setError(insertError.message);
+        Alert.alert('Error creating patient profile', insertError.message);
+        setLoading(false);
+        return;
+      }
+      
+      // Set direction for forward navigation
+      setDirection(1);
+      // @ts-ignore - navigation prop from tab navigator
+      navigation.navigate('Upload');
+    }
+    
+    setLoading(false);
   };
 
   const getInputStyle = (fieldName: string) => [
@@ -214,8 +269,9 @@ const SignUpScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                       style={styles.sendOtpButton}
                       onPress={sendOtp}
                       activeOpacity={0.8}
+                      disabled={loading}
                     >
-                      <Text style={styles.sendOtpText}>Send OTP</Text>
+                      <Text style={styles.sendOtpText}>{loading ? 'Sending...' : (otpSent ? 'Resend' : 'Send OTP')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -248,12 +304,14 @@ const SignUpScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
               {/* Action Buttons */}
               <View style={styles.actionSection}>
+                {error ? <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{error}</Text> : null}
                 <TouchableOpacity
-                  style={styles.submitButton}
+                  style={[styles.submitButton, loading && styles.disabledButton]}
                   onPress={handleSignUp}
                   activeOpacity={0.8}
+                  disabled={loading}
                 >
-                  <Text style={styles.submitButtonText}>Create Account</Text>
+                  <Text style={styles.submitButtonText}>{loading ? 'Creating Account...' : 'Create Account'}</Text>
                   <Ionicons 
                     name="arrow-forward" 
                     size={20} 
@@ -474,6 +532,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 16,
+  },
+  disabledButton: {
+    opacity: 0.5,
+    backgroundColor: '#ccc',
   },
   submitButtonText: {
     fontSize: 18,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,42 +6,128 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { globalStyles, colors } from '../styles/globalStyles';
 import AnimatedScreen from '../components/AnimatedScreen';
-
 import { useNavigation } from '../context/NavigationContext';
+import supabase from '../lib/supabase';
+
+interface Feature {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  description: string;
+  color: string;
+}
 
 const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { setDirection } = useNavigation();
+  const [features, setFeatures] = useState<Feature[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    checkUserStatus();
+    fetchFeatures();
+  }, []);
+
+  const checkUserStatus = async () => {
+    try {
+      const currentUserId = await AsyncStorage.getItem('currentUserId');
+      if (currentUserId) {
+        // Check if profile exists in database
+        const { data: existingProfile } = await supabase
+          .from('patients')
+          .select('id')
+          .eq('id', currentUserId)
+          .single();
+          
+        setIsLoggedIn(!!existingProfile);
+      }
+    } catch (error) {
+      console.log('Error checking user status:', error);
+    }
+  };
+
+  const fetchFeatures = async () => {
+    try {
+      const { data, error } = await supabase
+			.from('features')
+        .select('icon_name, title, description, color_hex')
+        .order('sort_order');
+
+      if (error) {
+        console.log('Features table not found, using default features');
+        // Use default features if table doesn't exist
+        setFeatures([
+          {
+            icon: 'medical',
+            title: 'Expert Consultation',
+            description: 'Get second opinions from top medical specialists',
+            color: '#2766E1',
+          },
+          {
+            icon: 'time',
+            title: 'Quick Response',
+            description: '24-48 hour turnaround for most consultations',
+            color: '#00C851',
+          },
+          {
+            icon: 'shield-checkmark',
+            title: 'Secure & Private',
+            description: 'Your medical data is protected and confidential',
+            color: '#FF6B35',
+          },
+        ]);
+      } else {
+        const formattedFeatures = data.map((item: any) => ({
+          icon: item.icon_name as keyof typeof Ionicons.glyphMap,
+          title: item.title,
+          description: item.description,
+          color: item.color_hex,
+        }));
+        setFeatures(formattedFeatures);
+      }
+    } catch (err) {
+      console.log('Error fetching features:', err);
+      // Use default features on error
+      setFeatures([
+        {
+          icon: 'medical',
+          title: 'Expert Consultation',
+          description: 'Get second opinions from top medical specialists',
+          color: '#2766E1',
+        },
+        {
+          icon: 'time',
+          title: 'Quick Response',
+          description: '24-48 hour turnaround for most consultations',
+          color: '#00C851',
+        },
+        {
+          icon: 'shield-checkmark',
+          title: 'Secure & Private',
+          description: 'Your medical data is protected and confidential',
+          color: '#FF6B35',
+        },
+      ]);
+    }
+    setLoading(false);
+  };
 
   const handleGetStarted = () => {
     setDirection(1);
-    // @ts-ignore - navigation prop from tab navigator
-    navigation.navigate('SignUp');
+    if (isLoggedIn) {
+      // User is already logged in, go to upload
+      navigation.navigate('Upload');
+    } else {
+      // New user, go to sign up
+      navigation.navigate('SignUp');
+    }
   };
-
-  const features = [
-    {
-      icon: 'medical',
-      title: 'Expert Second Opinions',
-      description: 'Get professional medical opinions from top specialists',
-      color: '#2766E1',
-    },
-    {
-      icon: 'shield-checkmark',
-      title: 'Secure & Confidential',
-      description: 'Your medical data is protected with bank-level security',
-      color: '#4CAF50',
-    },
-    {
-      icon: 'time',
-      title: 'Quick Turnaround',
-      description: 'Receive expert opinions within 24-48 hours',
-      color: '#FF9800',
-    },
-  ];
 
   return (
     <AnimatedScreen direction={1} screenKey="Welcome">
@@ -50,7 +136,6 @@ const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-
           {/* Header Section */}
           <View style={styles.header}>
             <View style={styles.headerCard}>
@@ -70,23 +155,29 @@ const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
           {/* Features Section */}
           <View style={styles.content}>
-            <View style={styles.featuresSection}>
-              {features.map((feature, index) => (
-                <View key={index} style={styles.featureCard}>
-                  <View style={[styles.featureIcon, { backgroundColor: feature.color }]}>
-                    <Ionicons 
-                      name={feature.icon as any} 
-                      size={28} 
-                      color="#FFFFFF"
-                    />
+            {loading ? (
+              <ActivityIndicator size="large" color={colors.primary} />
+            ) : error ? (
+              <Text style={styles.errorText}>{error}</Text>
+            ) : (
+              <View style={styles.featuresSection}>
+                {features.map((feature, index) => (
+                  <View key={index} style={styles.featureCard}>
+                    <View style={[styles.featureIcon, { backgroundColor: feature.color }]}>
+                      <Ionicons 
+                        name={feature.icon}
+                        size={28} 
+                        color="#FFFFFF"
+                      />
+                    </View>
+                    <View style={styles.featureContent}>
+                      <Text style={styles.featureTitle}>{feature.title}</Text>
+                      <Text style={styles.featureDescription}>{feature.description}</Text>
+                    </View>
                   </View>
-                  <View style={styles.featureContent}>
-                    <Text style={styles.featureTitle}>{feature.title}</Text>
-                    <Text style={styles.featureDescription}>{feature.description}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            )}
 
             {/* Action Section */}
             <View style={styles.actionSection}>
@@ -95,7 +186,9 @@ const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 onPress={handleGetStarted}
                 activeOpacity={0.8}
               >
-                <Text style={styles.getStartedText}>Get Started</Text>
+                <Text style={styles.getStartedText}>
+                  {isLoggedIn ? 'Continue' : 'Get Started'}
+                </Text>
                 <Ionicons 
                   name="arrow-forward" 
                   size={20} 
@@ -103,12 +196,14 @@ const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 />
               </TouchableOpacity>
 
-              <View style={styles.signInContainer}>
-                <Text style={styles.signInText}>Already have an account?</Text>
-                <TouchableOpacity style={styles.signInButton}>
-                  <Text style={styles.signInLink}>Sign In</Text>
-                </TouchableOpacity>
-              </View>
+              {!isLoggedIn && (
+                <View style={styles.signInContainer}>
+                  <Text style={styles.signInText}>Already have an account?</Text>
+                  <TouchableOpacity style={styles.signInButton} onPress={() => navigation.navigate('SignIn')}>
+                    <Text style={styles.signInLink}>Sign In</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
         </ScrollView>
@@ -121,11 +216,10 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.background,
   },
-      scrollContent: {
-      flexGrow: 1,
-
-      paddingBottom: 20,
-    },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
   header: {
     paddingHorizontal: 24,
     paddingTop: 20,
@@ -249,6 +343,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.primary,
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
   },
 });
 

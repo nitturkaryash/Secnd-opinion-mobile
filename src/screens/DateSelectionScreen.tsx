@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,17 +7,23 @@ import {
   SafeAreaView,
   FlatList,
   Dimensions,
+  Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { globalStyles, colors } from '../styles/globalStyles';
 import AnimatedScreen from '../components/AnimatedScreen';
 import { useNavigation } from '../context/NavigationContext';
+import supabase from '../lib/supabase';
+import type { Tables } from '../types/database.types';
 
 
-interface TimeSlot {
+interface UiTimeSlot {
   id: string;
   time: string;
   available: boolean;
+  doctor_id?: string | null;
+  slot_time?: string; // raw HH:MM:SS from DB
 }
 
 interface AppointmentDetails {
@@ -37,6 +43,9 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [appointmentDetails, setAppointmentDetails] = useState<AppointmentDetails | null>(null);
+  const [timeSlots, setTimeSlots] = useState<UiTimeSlot[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
   const generateCalendarDates = () => {
     const dates = [];
@@ -59,16 +68,38 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     return dates;
   };
 
-  const timeSlots: TimeSlot[] = [
-    { id: '1', time: '09:00 AM', available: true },
-    { id: '2', time: '10:00 AM', available: true },
-    { id: '3', time: '11:00 AM', available: true },
-    { id: '4', time: '12:00 PM', available: false },
-    { id: '5', time: '02:00 PM', available: true },
-    { id: '6', time: '03:00 PM', available: true },
-    { id: '7', time: '04:00 PM', available: true },
-    { id: '8', time: '05:00 PM', available: true },
-  ];
+  // Fetch slots when a date is selected
+  useEffect(() => {
+    const fetchSlots = async () => {
+      if (!selectedDate) {
+        setTimeSlots([]);
+        return;
+      }
+      setLoadingSlots(true);
+      setError('');
+      const { data, error: fetchError } = await supabase
+        .from('time_slots')
+        .select('id, slot_time, available, doctor_id')
+        .eq('slot_date', selectedDate)
+        .order('slot_time', { ascending: true });
+
+      if (fetchError) {
+        setError('Failed to load time slots');
+        setTimeSlots([]);
+      } else {
+        const formatted: UiTimeSlot[] = (data as Tables<'time_slots'>[]).map(s => ({
+          id: s.id,
+          time: formatTimeToAmPm(s.slot_time),
+          available: Boolean(s.available),
+          doctor_id: s.doctor_id,
+          slot_time: s.slot_time,
+        }));
+        setTimeSlots(formatted);
+      }
+      setLoadingSlots(false);
+    };
+    fetchSlots();
+  }, [selectedDate]);
 
   const handleDateSelect = (date: string, fullDate: string) => {
     setSelectedDate(fullDate);
@@ -78,31 +109,103 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     setSelectedTime(time);
   };
 
-  const handleConfirm = () => {
-    if (!selectedDate || !selectedTime) {
+  const selectedSlot = useMemo(() => timeSlots.find(s => s.time === selectedTime), [timeSlots, selectedTime]);
+
+  const handleConfirm = async () => {
+    if (!selectedDate || !selectedTime || !selectedSlot) {
       return;
     }
 
-    // Generate a random case ID
-    const caseId = `CASE-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-    
-    const details: AppointmentDetails = {
-      caseId,
-      selectedDate,
-      selectedTime,
-      status: 'confirmed',
-      timeline: [
-        { step: 'Account Created', status: 'completed', date: 'Today' },
-        { step: 'Documents Uploaded', status: 'completed', date: 'Today' },
-        { step: 'Appointment Scheduled', status: 'completed', date: 'Today' },
-        { step: 'Doctor Review', status: 'current' },
-        { step: 'Second Opinion Report', status: 'pending' },
-        { step: 'Report Delivered', status: 'pending' },
-      ],
-    };
+    try {
+      // Get the stored user ID from AsyncStorage
+      const currentUserId = await AsyncStorage.getItem('currentUserId');
+      if (!currentUserId) {
+        setError('User session not found. Please restart the profile setup.');
+        return;
+      }
 
-    setAppointmentDetails(details);
+      console.log('Creating appointment for user:', currentUserId);
+
+      // Build ISO datetime from selected date and raw time (HH:MM[:SS])
+      const isoDateTime = new Date(`${selectedDate}T${(selectedSlot.slot_time || '09:00')}`).toISOString();
+
+      // 1) Create appointment
+      const { data: created, error: insertError } = await supabase
+        .from('appointments')
+        .insert({
+          patient_id: currentUserId,
+          doctor_id: selectedSlot.doctor_id || null,
+          appointment_date_time: isoDateTime,
+          status: 'confirmed',
+        })
+        .select('id')
+        .single();
+
+      if (insertError) {
+        console.error('Appointment creation error:', insertError);
+        setError(`Failed to create appointment: ${insertError.message}`);
+        return;
+      }
+
+      console.log('Appointment created successfully:', created);
+
+      // 2) Mark the slot as unavailable
+      const { error: updateError } = await supabase
+        .from('time_slots')
+        .update({ available: false })
+        .eq('id', selectedSlot.id);
+
+      if (updateError) {
+        console.warn('Failed to update slot availability:', updateError);
+      }
+
+      const caseId = `CASE-${(created?.id || '').slice(0, 8).toUpperCase()}`;
+
+      const details: AppointmentDetails = {
+        caseId,
+        selectedDate,
+        selectedTime,
+        status: 'confirmed',
+        timeline: [
+          { step: 'Account Created', status: 'completed', date: 'Today' },
+          { step: 'Documents Uploaded', status: 'completed', date: 'Today' },
+          { step: 'Appointment Scheduled', status: 'completed', date: 'Today' },
+          { step: 'Doctor Review', status: 'current' },
+          { step: 'Second Opinion Report', status: 'pending' },
+          { step: 'Report Delivered', status: 'pending' },
+        ],
+      };
+
+      setAppointmentDetails(details);
+    } catch (error: any) {
+      console.error('Unexpected error during appointment creation:', error);
+      setError(`Unexpected error: ${error.message}`);
+    }
   };
+
+  const handleCompleteProcess = () => {
+    Alert.alert(
+      'Process Complete!', 
+      'Your profile has been created, documents uploaded, and appointment scheduled successfully. Thank you for using SecondOpinion!',
+      [
+        { text: 'Return to Home', onPress: () => navigation.navigate('WelcomeMain') }
+      ]
+    );
+  };
+
+  function formatTimeToAmPm(time24: string): string {
+    try {
+      const [hStr, mStr] = time24.split(':');
+      const hours = parseInt(hStr, 10);
+      const minutes = parseInt(mStr, 10);
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayH = hours % 12 === 0 ? 12 : hours % 12;
+      const mm = minutes.toString().padStart(2, '0');
+      return `${displayH}:${mm} ${ampm}`;
+    } catch {
+      return time24;
+    }
+  }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -141,7 +244,7 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  const renderTimeSlot = ({ item }: { item: TimeSlot }) => (
+  const renderTimeSlot = ({ item }: { item: UiTimeSlot }) => (
     <TouchableOpacity
       style={[
         styles.timeSlot,
@@ -181,6 +284,9 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       {/* Time Slots Section */}
       <View style={styles.timeCard}>
         <Text style={styles.cardHeader}>Select Time</Text>
+        {error ? (
+          <Text style={{ color: '#FF3B30', marginBottom: 12 }}>{error}</Text>
+        ) : null}
         <FlatList
           data={timeSlots}
           renderItem={renderTimeSlot}
@@ -188,6 +294,11 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           numColumns={2}
           columnWrapperStyle={styles.timeRow}
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            loadingSlots
+              ? () => <Text style={{ textAlign: 'center', color: '#666666' }}>Loading slots...</Text>
+              : () => <Text style={{ textAlign: 'center', color: '#666666' }}>No slots available</Text>
+          }
         />
       </View>
 
@@ -241,7 +352,7 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         <View style={styles.timelineSection}>
           <Text style={styles.timelineTitle}>Progress Timeline</Text>
           <View>
-            <View style={styles.timelineConnector} />
+            <View style={styles.timelineContent} />
             {appointmentDetails.timeline.map((item, index) => {
               const isCompleted = item.status === 'completed';
               const isCurrent = item.status === 'current';
@@ -285,14 +396,10 @@ const DateSelectionScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         
                   <TouchableOpacity
             style={styles.doneButton}
-            onPress={() => {
-              setDirection(-1);
-              // @ts-ignore - navigation prop from tab navigator
-              navigation.navigate('Welcome');
-            }}
+            onPress={handleCompleteProcess}
             activeOpacity={0.8}
           >
-          <Text style={styles.doneButtonText}>Done</Text>
+          <Text style={styles.doneButtonText}>Complete Process</Text>
         </TouchableOpacity>
       </View>
     );
@@ -432,14 +539,7 @@ const styles = StyleSheet.create({
   disabledDate: {
     opacity: 0.3,
   },
-  selectedDate: {
-    backgroundColor: '#2766E1',
-  },
-  dateText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333333',
-  },
+
   disabledDateText: {
     color: '#666666',
   },
@@ -461,35 +561,11 @@ const styles = StyleSheet.create({
   timeSlotsContainer: {
     gap: 20, // Increased gap between rows
   },
-  timeSlot: {
-    flex: 1,
-    marginHorizontal: 8, // Added horizontal margin for better spacing
-    paddingVertical: 24, // Increased vertical padding for better touch target
-    paddingHorizontal: 20, // Increased horizontal padding
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center', // Center content vertically
-    backgroundColor: '#F8F8F8',
-    minHeight: 80, // Minimum height for consistent sizing
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-  },
   unavailableSlot: {
     backgroundColor: '#F8F8F8',
     opacity: 0.7, // Slightly increased opacity for better visibility
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.08)', // Subtle border for visual distinction
-  },
-  selectedTimeSlot: {
-    backgroundColor: '#2766E1',
-    elevation: 4, // Increased elevation for selected state
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
   },
   timeSlotText: {
     fontSize: 18, // Increased font size for better readability
